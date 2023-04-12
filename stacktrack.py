@@ -28,8 +28,11 @@ class Stack:
         self.index -= stack_item.datalen
 
     def pop(self):
-        item = self.items.pop()
-        self.index += item.datalen
+        if len(self.items) > 0:
+            item = self.items.pop()
+            self.index += item.datalen
+            return 1
+        return 0
 
     def __str__(self):
         table_data = [[hex(i.loc), hex(i.offset), i.name, i.datatype, i.datalen] for i in reversed(self.items)]
@@ -54,7 +57,7 @@ class SessionContext:
         self.selected_stack.push(item)
 
     def sstack_pop(self):
-        self.selected_stack.pop()
+        return self.selected_stack.pop()
 
 def handle_input(uinput: str, context: SessionContext):
     uinput = uinput.split()
@@ -74,8 +77,10 @@ def handle_input(uinput: str, context: SessionContext):
         return f"pushed {dname} to stack {ctx.selected_stack.name}"
     
     if uinput[0] == 'pop':
-        context.sstack_pop()
-        return f"popped from stack {ctx.selected_stack.name}"
+        if context.sstack_pop() == 1:
+            return f"popped from stack {ctx.selected_stack.name}"
+        else:
+            return f"nothing on stack {ctx.selected_stack.name}"
     
     if uinput[0] == 'select':
         name = uinput[1]
@@ -96,6 +101,14 @@ def handle_input(uinput: str, context: SessionContext):
     
     if uinput[0] == "print":
         return ctx.selected_stack.__str__()
+    
+    if uinput[0] == "load":
+        fname = uinput[1]
+        with open(fname, "r") as f:
+            for line in f:
+                handle_input(line, ctx)
+        return f"{fname} loaded"
+
 
     return "command not found"
 

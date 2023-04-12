@@ -1,0 +1,9 @@
+mkstack mystack 0x100
+select mystack
+push int 4 x
+push int 4 y
+push int 4 z
+push char* 8 mystr
+push char* 8 mystr2
+push char 1 mychar
+push void* 8 myptr
