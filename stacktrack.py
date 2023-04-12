@@ -1,5 +1,9 @@
 from typing import List
 from tabulate import tabulate
+import random
+import string
+
+characters = string.ascii_lowercase
 
 class StackItem:
     def __init__(self, datatype: str, datalen: int, name: str):
@@ -9,12 +13,13 @@ class StackItem:
 
 
 class Stack:
-    def __init__(self, start_index: int, index: int = 0, items: List[StackItem] = []):
+    def __init__(self, start_index: int, index: int = 0, items: List[StackItem] = [], name: str = ""):
         self.start_index = start_index
         self.index = start_index if index == 0 else index
         self.items = items
         self.loc = 0
         self.offset = 0
+        self.name = name if name != "" else ''.join(random.choice(characters) for i in range(5))
 
     def push(self, stack_item: StackItem):
         self.items.append(stack_item)
@@ -34,26 +39,70 @@ class Stack:
         stack_info = f"Stack Pointer:\t\t{hex(self.index)}\nStack Base Pointer:\t{hex(self.start_index)}\n"
         return stack_info + table
     
+class SessionContext:
+    def __init__(self):
+        self.selected_stack = None
+        self.stacks = {}
 
-stack = Stack(0x100)
+    def select_stack(self, sname: str):
+        self.selected_stack = self.stacks[sname]
 
-int1 = StackItem("int", 4, "x")
-int2 = StackItem("int", 4, "y")
-int3 = StackItem("int", 4, "z")
-char1 = StackItem("char*", 8, "ptr_0")
-char2 = StackItem("char*", 8, "ptr_1")
-char3 = StackItem("char*", 8, "ptr_2")
+    def add_stack(self, stack: Stack):
+        self.stacks[stack.name] = stack
 
-stack.push(int1)
-stack.push(int2)
-stack.push(int3)
-stack.push(char1)
-stack.push(char2)
-stack.push(char3)
+    def sstack_push(self, item: StackItem):
+        self.selected_stack.push(item)
 
-print(stack)
+    def sstack_pop(self):
+        self.selected_stack.pop()
 
-stack.pop()
-stack.push(int1)
+def handle_input(uinput: str, context: SessionContext):
+    uinput = uinput.split()
+    if len(uinput) < 1:
+        print("Please enter a command")
+        return ""
+    
+    if uinput[0] == 'quit':
+        return "quit"
 
-print(stack)
+    if uinput[0] == 'push':
+        dtype = uinput[1]
+        dlen = int(uinput[2])
+        dname = uinput[3]
+        item = StackItem(dtype, dlen, dname)
+        context.sstack_push(item)
+        return f"pushed {dname} to stack {ctx.selected_stack.name}"
+    
+    if uinput[0] == 'pop':
+        context.sstack_pop()
+        return f"popped from stack {ctx.selected_stack.name}"
+    
+    if uinput[0] == 'select':
+        name = uinput[1]
+        context.select_stack(name)
+        return f"selected stack {name}"
+    
+    if uinput[0] == 'mkstack':
+        name = uinput[1]
+        index = uinput[2]
+        if '0x' in index:
+            index = int(index, 16)
+        else:
+            index = int(index)
+        
+        stack = Stack(start_index = index, name=name)
+        ctx.add_stack(stack)
+        return f"created new stack {name}"
+    
+    if uinput[0] == "print":
+        return ctx.selected_stack.__str__()
+
+    return "command not found"
+
+
+resp = ""
+ctx = SessionContext()
+while resp != 'quit':
+    uinput = input("> ")
+    resp = handle_input(uinput, ctx)
+    print(resp)
